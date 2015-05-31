@@ -5,8 +5,12 @@ angular.module('bannerify', [])
 		$scope.delay = 2000;
 		$scope.width = 620;
 		$scope.height = 444;
+		$scope.embedCode = null;
 		
 		$scope.steps = [];
+		$scope.options = {
+			once: false
+		};
 		
 		$scope.bannerify = new Object();
 		
@@ -23,21 +27,24 @@ angular.module('bannerify', [])
 	
 		$scope.getStepsData = function getStepsData (data) {
 			$scope.steps = [];
+			var editSteps = [];
 			if (data.value == PreziPlayer.STATUS_CONTENT_READY) {
 				$scope.animationSteps = $scope.bannerify.player.getAnimationCountOnSteps();
 				var stepCount = $scope.animationSteps.length;
 				for (var i=0; i<stepCount; i++) {
 					var actualStep = new Object();
-					var animations = [];
+					var anim = [];
 					for (var j=0; j<$scope.animationSteps[i]; j++) {
-						animations.push({delay: $scope.delay});
+						anim.push({delay: $scope.delay});
 					}
 					actualStep.delay = $scope.delay;
-					actualStep.animations = animations;	
-					$scope.steps.push(actualStep);
+					actualStep.anim = anim;	
+					editSteps.push(actualStep);
 				}
+				$scope.$apply(function () {
+					$scope.steps = editSteps;
+				});
 			}
-			$scope.$apply();
 		}
 		
 		$scope.stepTo = function stepTo (n) {
@@ -54,12 +61,27 @@ angular.module('bannerify', [])
 		}
 		
 		$scope.play = function play () {
+			$scope.bannerify.player.flyToStep(0);
+			
 			$scope.bannerify.setSteps($scope.steps);
+			$scope.bannerify.setOptions($scope.options);
 			$scope.bannerify.play();
 		}
 		
 		$scope.stop = function stop () {
 			$scope.bannerify.stop();
+		}
+		
+		$scope.createEmbedCode = function createEmbedCode () {	
+			var strPart1 = "<script>var d=document.createElement('div'), p=document.createElement('script'), pp=document.createElement('script'), ppp=document.createElement('script'), incl, ld1, ld2; incl = function(){ d.id=\"prezi_player_"+$scope.id+"\"; ppp.innerHTML=\"var player = new Bannerify('\"+d.id+\"', {preziId: '"+$scope.id+"', width: '"+$scope.width+"', height: '"+$scope.height+"', once: '"+$scope.options.once.toString()+"'}, ";
+			var strPart2 = angular.toJson($scope.steps).replace(/\"/g,"\\\"").replace(/\'/g,"\\'");
+			var strPart3 = ");\"; document.body.appendChild(d); document.body.appendChild(ppp); }; ld1 = function(){ if (!window.PreziPlayer) { p.src=\"https://raw.githubusercontent.com/alaplap/bannerify/master/prezi_player.js\"; document.body.appendChild(p); p.onload = ld2; } else { ld2(); } }; ld2 = function(){ if (!window.Bannerify) { pp.src=\"https://raw.githubusercontent.com/alaplap/bannerify/master/bannerify.js\"; document.body.appendChild(pp); pp.onload = incl; } else { incl(); } }; if (!window.PreziPlayer || !window.Bannerify) { ld1(); } else { incl(); }</script>";
+			
+			$scope.embedCode = strPart1.concat(strPart2,strPart3);
+		}
+		
+		$scope.createJSON = function createJSON () {	
+			$scope.embedCode = angular.toJson($scope.steps);
 		}
 	
 	}]);

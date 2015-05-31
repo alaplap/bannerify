@@ -12,19 +12,28 @@
 			this.stepCount = 0;
 			this.timer = null;
 			
+			options = options || {};
+			this.options = options;
+			
 			steps = steps || [];
 			this.steps = steps;
 	  	}
 		
 		Bannerify.prototype.setSteps = function (steps) {
-			this.steps = steps;
+			this.steps = steps || [];
+		}
+		
+		Bannerify.prototype.setOptions = function (options) {
+			this.options = options || [];
 		}
 		
 		Bannerify.prototype.initValues = function (data) {
-			console.log(this);
 			if (data.value == PreziPlayer.STATUS_CONTENT_READY) {
 				this.animationSteps = this.player.getAnimationCountOnSteps();
 				this.stepCount = this.animationSteps.length;
+				if (this.steps.length > 0) {
+					this.play();
+				}
 			}
 		}
 		
@@ -42,8 +51,8 @@
 			if (this.steps.length == 0) {
 				this.player.stop();
 			} else {
-				this.player.off(PreziPlayer.EVENT_CURRENT_STEP);
-				this.player.off(PreziPlayer.EVENT_CURRENT_ANIMATION_STEP);
+				this.player.off(PreziPlayer.EVENT_CURRENT_STEP, __bind(this.handleStepChange, this));
+				this.player.off(PreziPlayer.EVENT_CURRENT_ANIMATION_STEP, __bind(this.handleStepChange, this));
 				clearTimeout(this.timer);
 				this.player.flyToStep(0);
 			}
@@ -56,18 +65,17 @@
 				delay = this.steps[currentStep].delay;
 			} else if (data.type == PreziPlayer.EVENT_CURRENT_ANIMATION_STEP && data.value > 0) {
 				currentStep = this.player.getCurrentStep();
-				delay = this.steps[currentStep].animations[data.value-1].delay;
+				delay = this.steps[currentStep].anim[data.value-1].delay;
 			} else {
 				return;
 			}
 			
-			console.log(data);
+			clearTimeout(this.timer);
 			
 			if (this.animationSteps[currentStep] > 0 || this.stepCount > (currentStep+1)) {
-				console.log("delay: "+delay);
-				this.timer = setTimeout(__bind(function () { this.player.flyToNextStep() }, this), delay);
-			} else {
-				this.timer = setTimeout(__bind(function () { this.player.flyToStep(0) }, this), delay);
+				this.timer = setTimeout(__bind(function () { this.flyToNextStep() }, this.player), delay);
+			} else if (!this.options.once) {
+				this.timer = setTimeout(__bind(function () { this.flyToStep(0) }, this.player), delay);
 			}
 		}
 
